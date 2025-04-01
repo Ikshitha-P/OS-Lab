@@ -1,0 +1,98 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>  // For sleep()
+
+#define BUFFER_SIZE 5
+
+// Shared buffer and variables
+int buffer[BUFFER_SIZE];
+int in = 0;  // Index for next item to be produced
+int out = 0; // Index for next item to be consumed
+
+// Semaphore as integers
+int mutex = 1;   // Mutex for mutual exclusion (binary semaphore)
+int full = 0;    // Count of full slots in the buffer (counting semaphore)
+int empty = BUFFER_SIZE; // Count of empty slots in the buffer (counting semaphore)
+
+// Function to simulate waiting (decrementing) the semaphore
+void wait(int *sem) {
+    while (*sem <= 0);  // Busy wait if semaphore value is 0
+    (*sem)--;            // Decrement semaphore value
+}
+
+// Function to simulate signal (incrementing) the semaphore
+void signal(int *sem) {
+    (*sem)++;  // Increment semaphore value
+}
+
+int main() {
+    int choice;
+    
+    while (1) {
+        printf("\nEnter 1 to produce an item, 2 to consume an item, or 0 to exit: ");
+        scanf("%d", &choice);
+        
+        if (choice == 0) {
+            printf("Exiting the program.\n");
+            break;
+        }
+        
+        if (choice == 1) {
+            // Produce an item
+            if (empty > 0) {
+                // Wait for an empty slot in the buffer (decrement the empty semaphore)
+                wait(&empty);
+                
+                // Wait for the mutex (lock)
+                wait(&mutex);
+                
+                // Produce an item (random number for simplicity)
+                int item = rand() % 100;
+                
+                // Add the item to the buffer
+                buffer[in] = item;
+                printf("Producer produced: %d\n", item);
+                in = (in + 1) % BUFFER_SIZE;
+                
+                // Release the mutex (unlock)
+                signal(&mutex);
+                
+                // Signal that there is one more full slot in the buffer (increment full semaphore)
+                signal(&full);
+            } else {
+                printf("Buffer is full! Can't produce.\n");
+            }
+        } 
+        else if (choice == 2) {
+            // Consume an item
+            if (full > 0) {
+                // Wait for a full slot in the buffer (decrement the full semaphore)
+                wait(&full);
+                
+                // Wait for the mutex (lock)
+                wait(&mutex);
+                
+                // Consume an item from the buffer
+                int item = buffer[out];
+                printf("Consumer consumed: %d\n", item);
+                out = (out + 1) % BUFFER_SIZE;
+                
+                // Release the mutex (unlock)
+                signal(&mutex);
+                
+                // Signal that there is one more empty slot in the buffer (increment empty semaphore)
+                signal(&empty);
+            } else {
+                printf("Buffer is empty! Can't consume.\n");
+            }
+        } 
+        else {
+            printf("Invalid choice. Please enter 1 to produce or 2 to consume.\n");
+        }
+        
+        // Sleep for a second before the next action
+        sleep(1);
+    }
+    
+    return 0;
+}
