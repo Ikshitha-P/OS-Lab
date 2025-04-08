@@ -1,0 +1,42 @@
+#include <stdio.h>
+
+#define N 5  // Number of philosophers
+
+int chopstick[N] = {1, 1, 1, 1, 1}; // 1 = available, 0 = in use
+
+// Simulated wait and signal operations
+void wait(int *s) {
+    while (*s <= 0); // Busy wait
+    *s = *s - 1;
+}
+
+void signal(int *s) {
+    *s = *s + 1;
+}
+
+void philosopher(int i) {
+    int left = i;
+    int right = (i + 1) % N;
+
+    printf("Philosopher %d is HUNGRY\n", i);
+    wait(&chopstick[left]);
+    wait(&chopstick[right]);
+
+    printf("Philosopher %d is EATING 🍽️\n", i);
+    // simulate eating...
+
+    signal(&chopstick[left]);
+    signal(&chopstick[right]);
+
+    printf("Philosopher %d is THINKING 💭\n\n", i);
+}
+
+int main() {
+    for (int t = 0; t < 3; t++) {  // Simulate 3 rounds
+        printf("=== ROUND %d ===\n", t + 1);
+        for (int i = 0; i < N; i++) {
+            philosopher(i);
+        }
+    }
+    return 0;
+}
